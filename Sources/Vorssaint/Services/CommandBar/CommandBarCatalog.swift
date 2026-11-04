@@ -1801,6 +1801,19 @@ enum CommandBarCatalog {
         }
     }
 
+    /// The row for a word the Dictionary knows. Return copies the whole entry.
+    static func definitionEntry(word: String, text: String,
+                                bar: CommandBarFeatureStrings) -> CommandBarEntry {
+        CommandBarEntry(
+            id: "tool.define",
+            title: CommandBarTools.oneLine(text, limit: 140),
+            subtitle: word + " · " + bar.copyHint,
+            icon: .symbol("character.book.closed"),
+            isAnswer: true,
+            countsUsage: false,
+            run: { _ in copyToolText(text, secret: false) })
+    }
+
     private static func runTool(_ answer: CommandBarToolAnswer) {
         switch answer.action {
         case .copy: copyToolText(answer.value, secret: false)

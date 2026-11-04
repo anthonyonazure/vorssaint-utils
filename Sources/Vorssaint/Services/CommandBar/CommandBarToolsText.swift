@@ -257,6 +257,19 @@ extension CommandBarTools {
         }
     }
 
+    // MARK: - Word definitions
+
+    /// The word of "define serendipity", "def don't". The lookup itself runs in
+    /// the background, so this only says whether the text asks for one.
+    static func definitionWord(for query: String) -> String? {
+        let (key, rest) = split(query.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard ["define", "def", "meaning"].contains(key.lowercased()),
+              (2...40).contains(rest.count),
+              rest.allSatisfy({ $0.isLetter || $0 == "'" || $0 == "\u{2019}" || $0 == "-" }),
+              rest.contains(where: \.isLetter) else { return nil }
+        return rest
+    }
+
     // MARK: - QR code
 
     static let maxQRLength = 1_000

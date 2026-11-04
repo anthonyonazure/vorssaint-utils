@@ -153,6 +153,7 @@ final class CommandBarService: ObservableObject {
     private var catalog: [CommandBarEntry] = [] { didSet { foldedSections[.catalog] = nil } }
     let scriptRunner = CommandBarScriptRunner()
     let fileSearch = CommandBarFileSearch()
+    let dictionary = CommandBarDictionary()
     /// Which row answered which few letters, for as long as the app runs. Not
     /// stored: the bar forgets everything typed into it when it goes.
     private var queryMemory = CommandBarQueryMemory()
@@ -263,6 +264,7 @@ final class CommandBarService: ObservableObject {
         hotkey.onPress = { [weak self] in self?.toggle() }
         scriptRunner.onResult = { [weak self] in self?.refreshResults() }
         fileSearch.onResult = { [weak self] in self?.refreshResults() }
+        dictionary.onResult = { [weak self] in self?.refreshResults() }
     }
 
     // MARK: - Lifecycle
@@ -378,6 +380,7 @@ final class CommandBarService: ObservableObject {
         deferredRowShortcut.cancel()
         scriptRunner.reset()
         fileSearch.reset()
+        dictionary.reset()
         let id = UUID()
         presentationID = id
         presentationLifecycle.beginHome(id)
@@ -573,6 +576,7 @@ final class CommandBarService: ObservableObject {
         deferredRowShortcut.cancel()
         scriptRunner.reset()
         fileSearch.reset()
+        dictionary.reset()
         // Closing while listening for a combination must give every global key
         // back, or the whole app would go quiet until the next relaunch.
         if case .capturingShortcut = mode { endCapturingShortcut() }
@@ -1567,7 +1571,7 @@ final class CommandBarService: ObservableObject {
              .capturingShortcut:
             setCompactHome(false)
         }
-        let awaiting = fileSearch.isAwaiting || scriptRunner.isAwaiting
+        let awaiting = fileSearch.isAwaiting || scriptRunner.isAwaiting || dictionary.isAwaiting
         if awaitsAnswers != awaiting { awaitsAnswers = awaiting }
         refreshPanelLayout()
     }
@@ -1742,6 +1746,7 @@ final class CommandBarService: ObservableObject {
             // pending one goes: it would land on a list that has no room for
             // it and refresh the bar for nothing.
             fileSearch.cancelPending()
+            dictionary.cancelPending()
             let hidden = hiddenCache
             let pool = category == .clipboard
                 ? CommandBarCatalog.clipboardEntries(matching: trimmed, bar: bar, limit: 40) {
@@ -1780,6 +1785,7 @@ final class CommandBarService: ObservableObject {
         if let emojiQuery = CommandBarSearch.emojiQuery(from: trimmed) {
             scriptRunner.cancelPending()
             fileSearch.cancelPending()
+            dictionary.cancelPending()
             guard isEnabled(.emoji) else { return [] }
             let pool = categoryContent(.emoji, bar: bar)
             guard !emojiQuery.isEmpty else { return Array(pool.prefix(40)) }
@@ -1817,6 +1823,22 @@ final class CommandBarService: ObservableObject {
         let toolRows = isEnabled(.tools)
             ? CommandBarCatalog.toolEntries(for: trimmed, bar: bar)
             : []
+        // A word's definition is looked up in the background and lands a moment
+        // later, the way a saved script's answer does.
+        var definitionRow: CommandBarEntry?
+        if isEnabled(.tools), let word = CommandBarTools.definitionWord(for: trimmed) {
+            switch dictionary.lookup(word) {
+            case .found(let text):
+                dictionary.cancelPending()
+                definitionRow = CommandBarCatalog.definitionEntry(word: word, text: text, bar: bar)
+            case .missing:
+                dictionary.cancelPending()
+            case .unknown:
+                dictionary.schedule(word)
+            }
+        } else {
+            dictionary.cancelPending()
+        }
         // A web address typed into the bar is opened, not searched: the row
         // leads so Return opens it at once, the way a sum's answer does.
         let openURL = CommandBarCatalog.openURLEntry(for: trimmed, bar: bar)
@@ -1993,6 +2015,7 @@ final class CommandBarService: ObservableObject {
         var result: [CommandBarEntry] = []
         if let answer, colorPreview == nil { result.append(answer) }
         result.append(contentsOf: toolRows)
+        if let definitionRow { result.append(definitionRow) }
         if let openURL { result.append(openURL) }
         if let scriptAnswer { result.append(scriptAnswer) }
         for index in ranked {

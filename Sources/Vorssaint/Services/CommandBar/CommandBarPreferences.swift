@@ -25,6 +25,9 @@ enum CommandBarSource: String, CaseIterable, Identifiable {
     case folders
     case answers
     case calculator
+    /// Quick lookups answered from what was typed: dice, random data, number
+    /// bases, encodings, hashes, time zones. Switch off to hide them all.
+    case tools
     /// What the person had selected when the bar opened.
     case selection
     /// The links, folders and searches the person saved themselves.
@@ -56,6 +59,7 @@ enum CommandBarSource: String, CaseIterable, Identifiable {
         case .folders: return "folder"
         case .answers: return "info.circle"
         case .calculator: return "equal.square"
+        case .tools: return "wrench.and.screwdriver"
         case .selection: return "text.cursor"
         case .links: return "bookmark"
         case .files: return "doc.text.magnifyingglass"
@@ -79,7 +83,7 @@ enum CommandBarSource: String, CaseIterable, Identifiable {
         case .emoji: return "emoji."
         case .folders: return "folder."
         case .answers: return "answer."
-        case .calculator: return nil
+        case .calculator, .tools: return nil
         case .selection: return "selection."
         case .links: return "link."
         case .files: return "file."
@@ -187,7 +191,7 @@ enum CommandBarPreferences {
         case .files, .settingsPages: return -40
         case .apps: return 80
         case .actions, .windows, .quitApps, .uninstallApps, .macSettings, .snippets,
-             .clipboard, .emoji, .folders, .answers, .calculator, .selection, .links, .killProcess:
+             .clipboard, .emoji, .folders, .answers, .calculator, .tools, .selection, .links, .killProcess:
             return 0
         }
     }
@@ -218,7 +222,7 @@ enum CommandBarPreferences {
         switch source(ofRowID: rowID) {
         case .menus, .windows, .clipboard, .selection, .files, .killProcess, .uninstallApps: return false
         case .actions, .apps, .quitApps, .settingsPages, .macSettings, .snippets, .emoji,
-             .folders, .answers, .calculator, .links:
+             .folders, .answers, .calculator, .tools, .links:
             return true
         }
     }
@@ -297,7 +301,7 @@ enum CommandBarPreferences {
         case .menus, .quitApps, .uninstallApps, .clipboard, .emoji, .selection, .files, .killProcess:
             return false
         case .actions, .apps, .windows, .settingsPages, .macSettings, .snippets, .folders,
-             .links, .answers, .calculator:
+             .links, .answers, .calculator, .tools:
             return true
         }
     }
@@ -355,7 +359,7 @@ enum CommandBarPreferences {
         switch source(ofRowID: rowID) {
         case .actions, .settingsPages, .snippets: return true
         case .apps, .uninstallApps, .menus, .windows, .quitApps, .macSettings, .clipboard, .emoji,
-             .folders, .answers, .calculator, .selection, .links, .files, .killProcess:
+             .folders, .answers, .calculator, .tools, .selection, .links, .files, .killProcess:
             return false
         }
     }

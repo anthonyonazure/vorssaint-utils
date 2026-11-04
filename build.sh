@@ -514,6 +514,9 @@ if (( TEST )); then
         Sources/Vorssaint/Services/CommandBar/CommandBarEmoji.swift
         Sources/Vorssaint/Services/CommandBar/CommandBarLinks.swift
         Sources/Vorssaint/Services/CommandBar/CommandBarDates.swift
+        Sources/Vorssaint/Services/CommandBar/CommandBarTools.swift
+        Sources/Vorssaint/Services/CommandBar/CommandBarToolsText.swift
+        Sources/Vorssaint/Services/CommandBar/CommandBarToolsTime.swift
         Sources/Vorssaint/Services/CommandBar/CommandBarRowShortcuts.swift
         Sources/Vorssaint/Services/CommandBar/CommandBarSystemSettingsSupport.swift
         Sources/Vorssaint/Services/CommandBar/CommandBarFileSearchSupport.swift

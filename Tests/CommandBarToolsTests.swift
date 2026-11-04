@@ -304,6 +304,14 @@ enum CommandBarToolsTests {
         suite.expect(est.map { plain($0.value) } == "4:00 PM",
                      "est in July follows daylight saving, as people mean it: \(est?.value ?? "")")
 
+        suite.expect(CommandBarTools.definitionWord(for: "define serendipity") == "serendipity"
+                     && CommandBarTools.definitionWord(for: "DEF don't") == "don't"
+                     && CommandBarTools.definitionWord(for: "meaning well-known") == "well-known",
+                     "a single word after define, def or meaning is looked up")
+        for bad in ["define", "define a", "define two words", "define 123", "define --", "meaning of life",
+                    "definitely", "define " + String(repeating: "a", count: 41)] {
+            suite.expect(CommandBarTools.definitionWord(for: bad) == nil, "\"\(bad)\" is not a lookup")
+        }
         suite.expect(CommandBarTools.answers(for: "qr hello").first?.action == .copyQRCode
                      && values("qr " + String(repeating: "a", count: 1_001)).isEmpty,
                      "qr asks for an image, within a length limit")

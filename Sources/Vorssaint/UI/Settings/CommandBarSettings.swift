@@ -473,6 +473,7 @@ struct CommandBarSettings: View {
         case .folders: return text.sourceFolders
         case .answers: return text.sourceAnswers
         case .calculator: return text.sourceCalculator
+        case .tools: return text.sourceTools
         case .selection: return text.sourceSelection
         case .links: return text.linksTitle
         case .files: return text.sourceFiles

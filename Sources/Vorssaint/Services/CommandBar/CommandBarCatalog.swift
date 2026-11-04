@@ -1771,6 +1771,69 @@ enum CommandBarCatalog {
         return nil
     }
 
+    // MARK: - Quick tools
+
+    /// The rows of the quick tools: dice, random data, bases, hashes,
+    /// encodings, time zones. They lead the list the way a sum's answer does.
+    static func toolEntries(for query: String, bar: CommandBarFeatureStrings) -> [CommandBarEntry] {
+        CommandBarTools.answers(for: query).map { answer in
+            CommandBarEntry(
+                id: "tool.\(answer.id)",
+                title: answer.title,
+                subtitle: answer.detail + " · " + bar.copyHint,
+                icon: .symbol(answer.symbol),
+                isAnswer: true,
+                countsUsage: false,
+                run: { _ in runTool(answer) })
+        }
+    }
+
+    private static func runTool(_ answer: CommandBarToolAnswer) {
+        switch answer.action {
+        case .copy: copyToolText(answer.value, secret: false)
+        case .copySecret: copyToolText(answer.value, secret: true)
+        case .copyQRCode: copyQRCode(answer.value)
+        }
+    }
+
+    /// A generated password is marked concealed, so clipboard history and
+    /// every other tool that honors the convention leaves it out, and the
+    /// confirmation never prints it on screen.
+    private static func copyToolText(_ value: String, secret: Bool) {
+        GeneralPasteboardAccess.shared.async({
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.declareVorssaintSource()
+            if secret {
+                NSPasteboard.general.setString(
+                    "", forType: NSPasteboard.PasteboardType(
+                        ClipboardHistorySensitiveText.concealedPasteboardType))
+            }
+            return NSPasteboard.general.setString(value, forType: .string)
+        }, then: { copied in
+            QuickToolHUD.show(icon: copied ? (secret ? "lock.fill" : "doc.on.doc") : "exclamationmark.circle",
+                              message: copied
+                                  ? (secret ? "••••••••" : CommandBarTools.oneLine(value, limit: 60))
+                                  : FeatureStrings.commandBar(L10n.shared.language).copyFailed)
+        })
+    }
+
+    private static func copyQRCode(_ text: String) {
+        guard let image = CommandBarQRCode.image(for: text) else {
+            NSSound.beep()
+            return
+        }
+        GeneralPasteboardAccess.shared.async({
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.declareVorssaintSource()
+            return NSPasteboard.general.writeObjects([image])
+        }, then: { copied in
+            QuickToolHUD.show(icon: copied ? "qrcode" : "exclamationmark.circle",
+                              message: copied
+                                  ? CommandBarTools.oneLine(text, limit: 60)
+                                  : FeatureStrings.commandBar(L10n.shared.language).copyFailed)
+        })
+    }
+
     /// A row that opens what was typed as a web address, offered only when the
     /// text reads like one. It leads the list the way the calculator answer
     /// does, so Return opens it at once.

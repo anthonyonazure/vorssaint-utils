@@ -1047,7 +1047,7 @@ final class CommandBarService: ObservableObject {
             }
         case .killProcess:
             return AppFeature.killProcess.isAvailable
-        case .quitApps, .uninstallApps, .answers, .calculator, .selection, .files:
+        case .quitApps, .uninstallApps, .answers, .calculator, .tools, .selection, .files:
             return false
         }
     }
@@ -1077,7 +1077,7 @@ final class CommandBarService: ObservableObject {
                 self?.paste(entry)
             }
         case .killProcess: rows = killProcessEntries
-        case .quitApps, .answers, .calculator, .selection, .files:
+        case .quitApps, .answers, .calculator, .tools, .selection, .files:
             rows = []
         }
         return rows.filter { !hidden.contains($0.stableKey) }
@@ -1110,6 +1110,7 @@ final class CommandBarService: ObservableObject {
         case .folders: return bar.sourceFolders
         case .answers: return bar.sourceAnswers
         case .calculator: return bar.sourceCalculator
+        case .tools: return bar.sourceTools
         case .selection: return bar.sourceSelection
         case .files: return bar.sourceFiles
         case .links: return bar.linksTitle
@@ -1695,7 +1696,7 @@ final class CommandBarService: ObservableObject {
         case .snippets: return bar.kindSnippet
         case .folders: return bar.kindFolder
         case .actions, .apps, .menus, .windows, .quitApps, .uninstallApps, .settingsPages,
-             .macSettings, .clipboard, .emoji, .calculator, .selection, .files, .killProcess:
+             .macSettings, .clipboard, .emoji, .calculator, .tools, .selection, .files, .killProcess:
             return entry.subtitle.isEmpty ? bar.everythingTitle : entry.subtitle
         }
     }
@@ -1810,6 +1811,12 @@ final class CommandBarService: ObservableObject {
         let answer = isEnabled(.calculator)
             ? CommandBarCatalog.answerEntry(for: trimmed, bar: bar)
             : nil
+        // Quick tools answer the same way: dice, random data, bases, hashes,
+        // encodings, time zones. Their own source switch is read here because
+        // their rows carry no id prefix of their own.
+        let toolRows = isEnabled(.tools)
+            ? CommandBarCatalog.toolEntries(for: trimmed, bar: bar)
+            : []
         // A web address typed into the bar is opened, not searched: the row
         // leads so Return opens it at once, the way a sum's answer does.
         let openURL = CommandBarCatalog.openURLEntry(for: trimmed, bar: bar)
@@ -1985,6 +1992,7 @@ final class CommandBarService: ObservableObject {
         var counts: [String: Int] = [:]
         var result: [CommandBarEntry] = []
         if let answer, colorPreview == nil { result.append(answer) }
+        result.append(contentsOf: toolRows)
         if let openURL { result.append(openURL) }
         if let scriptAnswer { result.append(scriptAnswer) }
         for index in ranked {

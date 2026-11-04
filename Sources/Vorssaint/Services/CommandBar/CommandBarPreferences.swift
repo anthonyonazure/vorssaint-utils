@@ -83,7 +83,8 @@ enum CommandBarSource: String, CaseIterable, Identifiable {
         case .emoji: return "emoji."
         case .folders: return "folder."
         case .answers: return "answer."
-        case .calculator, .tools: return nil
+        case .calculator: return nil
+        case .tools: return "tool."
         case .selection: return "selection."
         case .links: return "link."
         case .files: return "file."
@@ -220,9 +221,9 @@ enum CommandBarPreferences {
     /// pinned to one would silently point somewhere else tomorrow.
     static func acceptsAlias(rowID: String) -> Bool {
         switch source(ofRowID: rowID) {
-        case .menus, .windows, .clipboard, .selection, .files, .killProcess, .uninstallApps: return false
+        case .menus, .windows, .clipboard, .selection, .files, .killProcess, .uninstallApps, .tools: return false
         case .actions, .apps, .quitApps, .settingsPages, .macSettings, .snippets, .emoji,
-             .folders, .answers, .calculator, .tools, .links:
+             .folders, .answers, .calculator, .links:
             return true
         }
     }
@@ -298,10 +299,10 @@ enum CommandBarPreferences {
     /// again, which reads as the pin being broken.
     static func acceptsPin(rowID: String) -> Bool {
         switch source(ofRowID: rowID) {
-        case .menus, .quitApps, .uninstallApps, .clipboard, .emoji, .selection, .files, .killProcess:
+        case .menus, .quitApps, .uninstallApps, .clipboard, .emoji, .selection, .files, .killProcess, .tools:
             return false
         case .actions, .apps, .windows, .settingsPages, .macSettings, .snippets, .folders,
-             .links, .answers, .calculator, .tools:
+             .links, .answers, .calculator:
             return true
         }
     }

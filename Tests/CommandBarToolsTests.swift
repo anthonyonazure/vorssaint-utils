@@ -46,6 +46,7 @@ enum CommandBarToolsTests {
         json(suite)
         cases(suite)
         zones(suite)
+        hints(suite)
     }
 
     // MARK: - Routing
@@ -315,5 +316,33 @@ enum CommandBarToolsTests {
         suite.expect(CommandBarTools.answers(for: "qr hello").first?.action == .copyQRCode
                      && values("qr " + String(repeating: "a", count: 1_001)).isEmpty,
                      "qr asks for an image, within a length limit")
+    }
+
+    // MARK: - Hints
+
+    private static func hints(_ suite: TestSuite) {
+        suite.expect(CommandBarTools.hints(for: "?").count == CommandBarTools.examples.count
+                     && CommandBarTools.examples.count >= 15,
+                     "a question mark lists one example per tool")
+        suite.expect(CommandBarTools.hints(for: "hex").first?.text == "hex ff"
+                     && CommandBarTools.hints(for: "HEX zz").first?.text == "hex ff"
+                     && CommandBarTools.hints(for: "pw 3").first?.text == "password 20",
+                     "a tool's word without a usable input offers its example")
+        suite.expect(CommandBarTools.hints(for: "hex ff").isEmpty && CommandBarTools.hints(for: "roll 2d6").isEmpty,
+                     "a query that already answers needs no hint")
+        suite.expect(CommandBarTools.hints(for: "define serendipity").isEmpty,
+                     "a definition lookup is left to the dictionary")
+        for query in ["", "safari", "volume up", "hexagon", "hello?"] {
+            suite.expect(CommandBarTools.hints(for: query).isEmpty, "\"\(query)\" offers no hint")
+        }
+        let words = CommandBarTools.examples.flatMap(\.keywords)
+        suite.expect(Set(words).count == words.count, "no word belongs to two tools")
+        for example in CommandBarTools.examples {
+            let first = CommandBarTools.split(example.text).word.lowercased()
+            suite.expect(example.keywords.contains(first), "the example \"\(example.text)\" starts with its own word")
+            suite.expect(example.id == "define"
+                         || !CommandBarTools.answers(for: example.text, context: context()).isEmpty,
+                         "the example \"\(example.text)\" really answers")
+        }
     }
 }

@@ -2031,6 +2031,13 @@ final class CommandBarService: ObservableObject {
             result.append(entry)
             if result.count >= 12 { break }
         }
+        // Hints go last, so a tool's word typed as an ordinary search never
+        // buries what it was meant to find; `?` has nothing else to show.
+        if isEnabled(.tools) {
+            for hint in CommandBarCatalog.toolHintEntries(for: trimmed) where result.count < 18 {
+                result.append(hint)
+            }
+        }
         if let colorPreview {
             result.insert(colorPreview, at: CommandBarSearch.colorPreviewIndex(
                 rowTitles: result.map(\.title), query: trimmed))

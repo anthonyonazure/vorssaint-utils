@@ -1801,6 +1801,21 @@ enum CommandBarCatalog {
         }
     }
 
+    /// Examples of the quick tools, offered for `?` or for a tool's word typed
+    /// on its own. Choosing one puts it in the field, ready to edit.
+    static func toolHintEntries(for query: String) -> [CommandBarEntry] {
+        CommandBarTools.hints(for: query).map { example in
+            CommandBarEntry(
+                id: "tool.hint.\(example.id)",
+                title: example.text,
+                subtitle: "",
+                icon: .symbol(example.symbol),
+                countsUsage: false,
+                keepsBarOpen: true,
+                run: { _ in CommandBarService.shared.query = example.text })
+        }
+    }
+
     /// The row for a word the Dictionary knows. Return copies the whole entry.
     static func definitionEntry(word: String, text: String,
                                 bar: CommandBarFeatureStrings) -> CommandBarEntry {

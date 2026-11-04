@@ -162,6 +162,8 @@ enum UninstallerFlowTests {
         var uninstallFinderRequestID: UUID?
         var pendingHomebrewRemoval: Uninstaller.HomebrewRemovalConfirmation?
         var queryBeforeCompletion: String?
+        var historyCursor: Int?
+        var historyRecalledText: String?
         var completedQuery: String?
         var savedQuery = ""
         var aliasWarning: String?

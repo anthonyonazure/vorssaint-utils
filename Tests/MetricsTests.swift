@@ -257,6 +257,7 @@ struct MetricsTests {
             }),
             ("emoji", { CommandBarEmojiContract.run(suite) }),
             ("command-bar-tools", { CommandBarToolsTests.run(suite) }),
+            ("command-bar-recall", { CommandBarRecallTests.run(suite) }),
         ]
         var selected = Set<String>()
         var listOnly = false

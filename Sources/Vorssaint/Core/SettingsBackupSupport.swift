@@ -176,6 +176,9 @@ enum SettingsBackupSupport {
         DefaultsKey.commandBarUsage,
         DefaultsKey.commandBarQueryHabits,
         DefaultsKey.commandBarQueryHabitKey,
+        // What was run and what was typed are private content, not settings.
+        DefaultsKey.commandBarRecents,
+        DefaultsKey.commandBarHistory,
         // A chosen folder is authority on one Mac, not portable configuration.
         // Restoring it elsewhere could search a different volume or trigger a
         // protected-folder prompt without a fresh choice.

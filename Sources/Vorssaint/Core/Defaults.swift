@@ -649,6 +649,10 @@ enum DefaultsKey {
     static let commandBarUsage = "commandBarUsage"           // per-command run counts, never queries
     static let commandBarQueryHabits = "commandBarQueryHabits" // keyed query digests → selected row ids
     static let commandBarQueryHabitKey = "commandBarQueryHabitKey" // local key for stable digests
+    static let commandBarRecentsEnabled = "commandBarRecentsEnabled" // remember which commands ran. Off by default
+    static let commandBarRecents = "commandBarRecents"       // row keys of the commands run lately, newest first
+    static let commandBarHistoryEnabled = "commandBarHistoryEnabled" // remember typed searches. Off by default
+    static let commandBarHistory = "commandBarHistory"       // typed searches, newest first, private to this Mac
     static let commandBarDisabledSources = "commandBarDisabledSources" // kinds of result switched off
     static let commandBarAliases = "commandBarAliases"       // {row id: the name the person gave it}
     static let commandBarPins = "commandBarPins"             // row keys kept at the top, in order
@@ -1889,6 +1893,8 @@ enum Defaults {
         DefaultsKey.commandBarAliases: "",
         DefaultsKey.commandBarPins: "",
         DefaultsKey.commandBarHidden: "",
+        DefaultsKey.commandBarRecentsEnabled: false,
+        DefaultsKey.commandBarHistoryEnabled: false,
         DefaultsKey.commandBarFileScopes: "",
         DefaultsKey.commandBarFileIgnores: "",
         DefaultsKey.commandBarShortcut: GlobalShortcut.commandBarDefault.storageValue,

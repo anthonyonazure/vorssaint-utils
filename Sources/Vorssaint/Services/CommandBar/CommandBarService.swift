@@ -68,6 +68,7 @@ final class CommandBarService: ObservableObject {
     @Published var query = "" {
         didSet {
             guard query != oldValue else { return }
+            if historyCursor != nil, query != historyRecalledText { historyCursor = nil }
             uninstallWarning = nil
             uninstallFinderRequestID = nil
             if mode.isUninstallFlow {
@@ -153,6 +154,7 @@ final class CommandBarService: ObservableObject {
     private var catalog: [CommandBarEntry] = [] { didSet { foldedSections[.catalog] = nil } }
     let scriptRunner = CommandBarScriptRunner()
     let fileSearch = CommandBarFileSearch()
+    let dictionary = CommandBarDictionary()
     /// Which row answered which few letters, for as long as the app runs. Not
     /// stored: the bar forgets everything typed into it when it goes.
     private var queryMemory = CommandBarQueryMemory()
@@ -227,6 +229,11 @@ final class CommandBarService: ObservableObject {
     /// Tab replaces the field with a title, but the search that found that
     /// title is what app-choice learning should remember.
     private var queryBeforeCompletion: String?
+    /// Where ⌥↑ and ⌥↓ stand in the remembered searches, nil when the field holds
+    /// what the person typed. Any typing of their own ends the walk.
+    private var historyCursor: Int?
+    private var historyDraft = ""
+    private var historyRecalledText: String?
     private var completedQuery: String?
     /// The last thing typed, kept only in memory so reopening can offer it.
     private var lastQuery = ""
@@ -263,6 +270,7 @@ final class CommandBarService: ObservableObject {
         hotkey.onPress = { [weak self] in self?.toggle() }
         scriptRunner.onResult = { [weak self] in self?.refreshResults() }
         fileSearch.onResult = { [weak self] in self?.refreshResults() }
+        dictionary.onResult = { [weak self] in self?.refreshResults() }
     }
 
     // MARK: - Lifecycle
@@ -378,6 +386,7 @@ final class CommandBarService: ObservableObject {
         deferredRowShortcut.cancel()
         scriptRunner.reset()
         fileSearch.reset()
+        dictionary.reset()
         let id = UUID()
         presentationID = id
         presentationLifecycle.beginHome(id)
@@ -390,6 +399,9 @@ final class CommandBarService: ObservableObject {
         completedQuery = nil
         queryWhenRun = ""
         selectionWhenRun = ""
+        historyCursor = nil
+        historyDraft = ""
+        historyRecalledText = nil
         lastPointerLocation = NSEvent.mouseLocation
         selectedID = nil
         lastRankedQuery = nil
@@ -573,6 +585,7 @@ final class CommandBarService: ObservableObject {
         deferredRowShortcut.cancel()
         scriptRunner.reset()
         fileSearch.reset()
+        dictionary.reset()
         // Closing while listening for a combination must give every global key
         // back, or the whole app would go quiet until the next relaunch.
         if case .capturingShortcut = mode { endCapturingShortcut() }
@@ -1047,7 +1060,7 @@ final class CommandBarService: ObservableObject {
             }
         case .killProcess:
             return AppFeature.killProcess.isAvailable
-        case .quitApps, .uninstallApps, .answers, .calculator, .selection, .files:
+        case .quitApps, .uninstallApps, .answers, .calculator, .tools, .selection, .files:
             return false
         }
     }
@@ -1077,7 +1090,7 @@ final class CommandBarService: ObservableObject {
                 self?.paste(entry)
             }
         case .killProcess: rows = killProcessEntries
-        case .quitApps, .answers, .calculator, .selection, .files:
+        case .quitApps, .answers, .calculator, .tools, .selection, .files:
             rows = []
         }
         return rows.filter { !hidden.contains($0.stableKey) }
@@ -1110,6 +1123,7 @@ final class CommandBarService: ObservableObject {
         case .folders: return bar.sourceFolders
         case .answers: return bar.sourceAnswers
         case .calculator: return bar.sourceCalculator
+        case .tools: return bar.sourceTools
         case .selection: return bar.sourceSelection
         case .files: return bar.sourceFiles
         case .links: return bar.linksTitle
@@ -1566,7 +1580,7 @@ final class CommandBarService: ObservableObject {
              .capturingShortcut:
             setCompactHome(false)
         }
-        let awaiting = fileSearch.isAwaiting || scriptRunner.isAwaiting
+        let awaiting = fileSearch.isAwaiting || scriptRunner.isAwaiting || dictionary.isAwaiting
         if awaitsAnswers != awaiting { awaitsAnswers = awaiting }
         refreshPanelLayout()
     }
@@ -1629,8 +1643,24 @@ final class CommandBarService: ObservableObject {
             rows.append(contentsOf: pinnedRows)
         }
 
+        // What was run lately, when the person asked for it to be kept. Under
+        // the pins, which they put there on purpose, and above the guesses.
+        var recentIDs = Set<String>()
+        if UserDefaults.standard.bool(forKey: DefaultsKey.commandBarRecentsEnabled) {
+            let stored = CommandBarRecents.decode(
+                UserDefaults.standard.string(forKey: DefaultsKey.commandBarRecents) ?? "")
+            let keys = CommandBarRecents.visible(stored, available: Set(byKey.keys),
+                                                 excluding: Set(pinnedRows.map(\.stableKey)))
+            let recentRows = keys.compactMap { byKey[$0] }
+            if !recentRows.isEmpty {
+                titles[rows.count] = bar.recentTitle
+                rows.append(contentsOf: recentRows)
+                recentIDs = Set(recentRows.map(\.id))
+            }
+        }
+
         let usage = usageCache
-        let pinnedIDs = Set(pinnedRows.map(\.id))
+        let pinnedIDs = Set(pinnedRows.map(\.id)).union(recentIDs)
         let ids = CommandBarUsage.suggestionIDs(usage: usage,
                                                 available: offerable.map(\.id).filter { !pinnedIDs.contains($0) },
                                                 curated: CommandBarCatalog.curatedSuggestionIDs,
@@ -1695,7 +1725,7 @@ final class CommandBarService: ObservableObject {
         case .snippets: return bar.kindSnippet
         case .folders: return bar.kindFolder
         case .actions, .apps, .menus, .windows, .quitApps, .uninstallApps, .settingsPages,
-             .macSettings, .clipboard, .emoji, .calculator, .selection, .files, .killProcess:
+             .macSettings, .clipboard, .emoji, .calculator, .tools, .selection, .files, .killProcess:
             return entry.subtitle.isEmpty ? bar.everythingTitle : entry.subtitle
         }
     }
@@ -1741,6 +1771,7 @@ final class CommandBarService: ObservableObject {
             // pending one goes: it would land on a list that has no room for
             // it and refresh the bar for nothing.
             fileSearch.cancelPending()
+            dictionary.cancelPending()
             let hidden = hiddenCache
             let pool = category == .clipboard
                 ? CommandBarCatalog.clipboardEntries(matching: trimmed, bar: bar, limit: 40) {
@@ -1779,6 +1810,7 @@ final class CommandBarService: ObservableObject {
         if let emojiQuery = CommandBarSearch.emojiQuery(from: trimmed) {
             scriptRunner.cancelPending()
             fileSearch.cancelPending()
+            dictionary.cancelPending()
             guard isEnabled(.emoji) else { return [] }
             let pool = categoryContent(.emoji, bar: bar)
             guard !emojiQuery.isEmpty else { return Array(pool.prefix(40)) }
@@ -1810,6 +1842,28 @@ final class CommandBarService: ObservableObject {
         let answer = isEnabled(.calculator)
             ? CommandBarCatalog.answerEntry(for: trimmed, bar: bar)
             : nil
+        // Quick tools answer the same way: dice, random data, bases, hashes,
+        // encodings, time zones. Their own source switch is read here because
+        // their rows carry no id prefix of their own.
+        let toolRows = isEnabled(.tools)
+            ? CommandBarCatalog.toolEntries(for: trimmed, bar: bar)
+            : []
+        // A word's definition is looked up in the background and lands a moment
+        // later, the way a saved script's answer does.
+        var definitionRow: CommandBarEntry?
+        if isEnabled(.tools), let word = CommandBarTools.definitionWord(for: trimmed) {
+            switch dictionary.lookup(word) {
+            case .found(let text):
+                dictionary.cancelPending()
+                definitionRow = CommandBarCatalog.definitionEntry(word: word, text: text, bar: bar)
+            case .missing:
+                dictionary.cancelPending()
+            case .unknown:
+                dictionary.schedule(word)
+            }
+        } else {
+            dictionary.cancelPending()
+        }
         // A web address typed into the bar is opened, not searched: the row
         // leads so Return opens it at once, the way a sum's answer does.
         let openURL = CommandBarCatalog.openURLEntry(for: trimmed, bar: bar)
@@ -1985,6 +2039,8 @@ final class CommandBarService: ObservableObject {
         var counts: [String: Int] = [:]
         var result: [CommandBarEntry] = []
         if let answer, colorPreview == nil { result.append(answer) }
+        result.append(contentsOf: toolRows)
+        if let definitionRow { result.append(definitionRow) }
         if let openURL { result.append(openURL) }
         if let scriptAnswer { result.append(scriptAnswer) }
         for index in ranked {
@@ -1999,6 +2055,13 @@ final class CommandBarService: ObservableObject {
             }
             result.append(entry)
             if result.count >= 12 { break }
+        }
+        // Hints go last, so a tool's word typed as an ordinary search never
+        // buries what it was meant to find; `?` has nothing else to show.
+        if isEnabled(.tools) {
+            for hint in CommandBarCatalog.toolHintEntries(for: trimmed) where result.count < 18 {
+                result.append(hint)
+            }
         }
         if let colorPreview {
             result.insert(colorPreview, at: CommandBarSearch.colorPreviewIndex(
@@ -2849,6 +2912,62 @@ final class CommandBarService: ObservableObject {
                                           forKey: DefaultsKey.commandBarQueryHabits)
             }
         }
+        rememberRun(of: entry, typed: trimmedQuery)
+    }
+
+    // MARK: - Recent commands and searches
+
+    /// Both are off until asked for. They keep which command ran and, apart,
+    /// the text typed; nothing from a password, hash or encoding tool.
+    private func rememberRun(of entry: CommandBarEntry, typed: String) {
+        let defaults = UserDefaults.standard
+        if entry.countsUsage, defaults.bool(forKey: DefaultsKey.commandBarRecentsEnabled),
+           CommandBarRecents.mayRemember(rowID: entry.id) {
+            let stored = CommandBarRecents.decode(defaults.string(forKey: DefaultsKey.commandBarRecents) ?? "")
+            let next = CommandBarRecents.recording(entry.stableKey, in: stored)
+            if next != stored { defaults.set(CommandBarRecents.encode(next), forKey: DefaultsKey.commandBarRecents) }
+        }
+        if isVisible, !entry.id.hasPrefix("tool.hint."),
+           defaults.bool(forKey: DefaultsKey.commandBarHistoryEnabled) {
+            let stored = CommandBarSearchHistory.decode(defaults.string(forKey: DefaultsKey.commandBarHistory) ?? "")
+            let next = CommandBarSearchHistory.recording(typed, in: stored)
+            if next != stored {
+                defaults.set(CommandBarSearchHistory.encode(next), forKey: DefaultsKey.commandBarHistory)
+            }
+        }
+    }
+
+    func forgetRecents() {
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.commandBarRecents)
+    }
+
+    func forgetHistory() {
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.commandBarHistory)
+        historyCursor = nil
+        historyDraft = ""
+        historyRecalledText = nil
+    }
+
+    /// ⌥↑ brings back an earlier search, ⌥↓ goes forward and finally returns
+    /// to what was being typed. False when there is nothing to recall, so the
+    /// keys keep their ordinary meaning.
+    private func recallHistory(_ direction: CommandBarSearchHistory.Direction) -> Bool {
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: DefaultsKey.commandBarHistoryEnabled), case .search = mode else {
+            return false
+        }
+        let entries = CommandBarSearchHistory.decode(defaults.string(forKey: DefaultsKey.commandBarHistory) ?? "")
+        guard !entries.isEmpty else { return false }
+        let next = CommandBarSearchHistory.step(from: historyCursor, direction, count: entries.count)
+        if historyCursor == nil, next != nil { historyDraft = query }
+        let text = next.map { entries[$0] } ?? historyDraft
+        historyRecalledText = text
+        historyCursor = next
+        if let editor = panel?.firstResponder as? NSTextView, editor.string == query {
+            editor.insertText(text, replacementRange: NSRange(location: 0, length: (query as NSString).length))
+        }
+        query = text
+        return true
     }
 
     private func finish(_ entry: CommandBarEntry, value: Int?) {
@@ -3535,6 +3654,13 @@ final class CommandBarService: ObservableObject {
                 default:
                     break
                 }
+            }
+            // ⌥↑ and ⌥↓ walk the remembered searches, when the person asked
+            // for them to be kept.
+            if event.modifierFlags.intersection([.command, .control, .option, .shift]) == [.option],
+               Int(event.keyCode) == kVK_UpArrow || Int(event.keyCode) == kVK_DownArrow,
+               self.recallHistory(Int(event.keyCode) == kVK_UpArrow ? .older : .newer) {
+                return nil
             }
             // ⌘Return shows the selected row where it lives. Guarded by the
             // row's own rule, so a row with nowhere to go hands the keys back

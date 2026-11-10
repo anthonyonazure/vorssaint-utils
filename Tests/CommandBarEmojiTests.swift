@@ -63,6 +63,8 @@ enum CommandBarEmojiContract {
         var query = ":thumb"
         var savedQuery = ""
         var queryBeforeCompletion: String?
+        /// What the bar remembers on request is not what these tests are about.
+        func rememberRun(of entry: CommandBarEntry, typed: String) {}
         var queryMemoryStep = 0
         var queryMemory = CommandBarQueryMemory()
         var queryHabitStore = CommandBarQueryHabitStoreCache()

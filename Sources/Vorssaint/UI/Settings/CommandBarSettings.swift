@@ -16,6 +16,8 @@ struct CommandBarSettings: View {
     @AppStorage(DefaultsKey.commandBarAliases) private var aliasesRaw = ""
     @AppStorage(DefaultsKey.commandBarPins) private var pinsRaw = ""
     @AppStorage(DefaultsKey.commandBarHidden) private var hiddenRaw = ""
+    @AppStorage(DefaultsKey.commandBarRecentsEnabled) private var recentsEnabled = false
+    @AppStorage(DefaultsKey.commandBarHistoryEnabled) private var historyEnabled = false
     @AppStorage(DefaultsKey.commandBarLinks) private var linksData = Data()
     @AppStorage(DefaultsKey.commandBarRowShortcuts) private var rowShortcutsRaw = ""
     @AppStorage(DefaultsKey.commandBarFileScopes) private var fileScopesRaw = ""
@@ -35,7 +37,7 @@ struct CommandBarSettings: View {
     /// The examples do double duty: they say what the bar can do, which no
     /// list of toggles ever manages to.
     private var examples: [String] {
-        ["100 km to mi", "2+2*3", "brightness 40", "fire", "battery"].filter {
+        ["100 km to mi", "2+2*3", "roll 2d6", "brightness 40", "fire", "battery", "?"].filter {
             $0 != "battery" || PowerSampler.hasInternalBattery
         }
     }
@@ -125,6 +127,28 @@ struct CommandBarSettings: View {
                     Text(text.asciiLayoutCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    // What is remembered is private content, so both are off
+                    // until asked for, and turning one off forgets it.
+                    Toggle(text.recentsToggle, isOn: $recentsEnabled)
+                        .onChange(of: recentsEnabled) { _, isOn in
+                            if !isOn { CommandBarService.shared.forgetRecents() }
+                        }
+                    Text(text.recentsCaption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Toggle(text.historyToggle, isOn: $historyEnabled)
+                        .onChange(of: historyEnabled) { _, isOn in
+                            if !isOn { CommandBarService.shared.forgetHistory() }
+                        }
+                    Text(text.historyCaption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if recentsEnabled || historyEnabled {
+                        Button(text.recentsClear) {
+                            CommandBarService.shared.forgetRecents()
+                            CommandBarService.shared.forgetHistory()
+                        }
+                    }
                 }
             } header: {
                 Text(text.pageTitle)
@@ -473,6 +497,7 @@ struct CommandBarSettings: View {
         case .folders: return text.sourceFolders
         case .answers: return text.sourceAnswers
         case .calculator: return text.sourceCalculator
+        case .tools: return text.sourceTools
         case .selection: return text.sourceSelection
         case .links: return text.linksTitle
         case .files: return text.sourceFiles

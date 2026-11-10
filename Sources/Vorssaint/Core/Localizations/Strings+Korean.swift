@@ -378,6 +378,7 @@ extension Strings {
         startupNone: "시작 항목을 찾지 못했습니다",
         startupRefresh: "새로 고침",
         cleanerRescan: "다시 검사",
+        cleanerNewScan: "새로 검사",
         startupLocked: "macOS 또는 Vorssaint의 일부이므로 여기서 변경할 수 없습니다",
         startupFailed: "변경할 수 없습니다",
         startupLeftover: "앱을 찾을 수 없음, 남은 파일일 가능성이 높음",

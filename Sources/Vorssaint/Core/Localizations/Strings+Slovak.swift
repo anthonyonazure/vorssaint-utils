@@ -377,6 +377,7 @@ extension Strings {
         startupNone: "Nenašli sa žiadne spúšťané položky",
         startupRefresh: "Obnoviť",
         cleanerRescan: "Skenovať znova",
+        cleanerNewScan: "Nové skenovanie",
         startupLocked: "Súčasť macOS alebo Vorssaint, preto sa tu nedá zmeniť",
         startupFailed: "Nepodarilo sa zmeniť",
         startupLeftover: "Aplikácia sa nenašla, pravdepodobne zvyšok",

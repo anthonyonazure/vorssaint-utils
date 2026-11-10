@@ -378,6 +378,7 @@ extension Strings {
         startupNone: "Элементов автозапуска не найдено",
         startupRefresh: "Обновить",
         cleanerRescan: "Сканировать снова",
+        cleanerNewScan: "Новое сканирование",
         startupLocked: "Часть macOS или Vorssaint, поэтому здесь это изменить нельзя",
         startupFailed: "Не удалось изменить",
         startupLeftover: "Приложение не найдено, вероятно остаток",

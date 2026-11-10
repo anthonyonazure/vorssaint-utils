@@ -377,6 +377,7 @@ extension Strings {
         startupNone: "Keine Startobjekte gefunden",
         startupRefresh: "Aktualisieren",
         cleanerRescan: "Erneut scannen",
+        cleanerNewScan: "Neuer Scan",
         startupLocked: "Teil von macOS oder Vorssaint und kann hier nicht geändert werden",
         startupFailed: "Änderung nicht möglich",
         startupLeftover: "App nicht gefunden, wahrscheinlich ein Überbleibsel",

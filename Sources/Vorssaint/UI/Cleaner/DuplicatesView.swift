@@ -240,7 +240,7 @@ struct DuplicatesView: View {
                 .foregroundStyle(.secondary)
             HStack {
                 Button(l10n.s.cleanerRescan) { finder.rescan() }
-                Button(l10n.s.uninstallerAnother) { finder.reset() }
+                Button(l10n.s.cleanerNewScan) { finder.reset() }
                     .buttonStyle(.borderedProminent)
             }
         }

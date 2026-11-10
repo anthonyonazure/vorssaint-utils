@@ -377,6 +377,7 @@ extension Strings {
         startupNone: "No se encontraron ayudantes de inicio",
         startupRefresh: "Actualizar",
         cleanerRescan: "Volver a escanear",
+        cleanerNewScan: "Nuevo escaneo",
         startupLocked: "Forma parte de macOS o de Vorssaint, así que no se puede cambiar aquí",
         startupFailed: "No se pudo cambiar",
         startupLeftover: "App no encontrada, probablemente un resto",

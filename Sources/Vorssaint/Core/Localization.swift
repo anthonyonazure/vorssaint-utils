@@ -543,6 +543,7 @@ struct Strings {
     let startupShared: String
     let startupNone: String
     let startupRefresh: String
+    let cleanerRescan: String
     let startupLocked: String
     let startupFailed: String
     let startupLeftover: String
@@ -1752,6 +1753,7 @@ extension Strings {
         startupShared: "Compartilhados com todos os usuários (somente leitura)",
         startupNone: "Nenhum ajudante de inicialização encontrado",
         startupRefresh: "Atualizar",
+        cleanerRescan: "Verificar novamente",
         startupLocked: "Faz parte do macOS ou do Vorssaint, então não pode ser alterado aqui",
         startupFailed: "Não foi possível alterar",
         startupLeftover: "App não encontrado, provavelmente um resto",
@@ -2925,6 +2927,7 @@ extension Strings {
         startupShared: "Shared with all users (view only)",
         startupNone: "No startup helpers found",
         startupRefresh: "Refresh",
+        cleanerRescan: "Rescan",
         startupLocked: "Part of macOS or Vorssaint, so it cannot be changed here",
         startupFailed: "Could not change",
         startupLeftover: "App not found, probably a leftover",

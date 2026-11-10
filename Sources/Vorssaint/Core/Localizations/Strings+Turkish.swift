@@ -374,6 +374,7 @@ extension Strings {
         startupShared: "Tüm kullanıcılarla paylaşılır (yalnızca görüntüleme)",
         startupNone: "Başlangıç öğesi bulunamadı",
         startupRefresh: "Yenile",
+        cleanerRescan: "Yeniden tara",
         startupLocked: "macOS veya Vorssaint’in parçası olduğu için burada değiştirilemez",
         startupFailed: "Değiştirilemedi",
         startupLeftover: "Uygulama bulunamadı, muhtemelen artık bir kalıntı",

@@ -374,6 +374,7 @@ extension Strings {
         startupShared: "Partagés avec tous les utilisateurs (lecture seule)",
         startupNone: "Aucun élément de démarrage trouvé",
         startupRefresh: "Actualiser",
+        cleanerRescan: "Réanalyser",
         startupLocked: "Fait partie de macOS ou de Vorssaint, il ne peut pas être modifié ici",
         startupFailed: "Modification impossible",
         startupLeftover: "App introuvable, probablement un reste",

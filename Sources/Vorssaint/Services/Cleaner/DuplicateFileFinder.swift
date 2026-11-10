@@ -43,6 +43,7 @@ final class DuplicateFileFinder: ObservableObject {
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var groups: [Group] = []
     private var cancellation: CleanerSupport.ScanCancellation?
+    private var lastMinimumSize: Int64?
 
     private init() {}
 
@@ -104,8 +105,15 @@ final class DuplicateFileFinder: ObservableObject {
         phase = .idle
     }
 
+    /// Runs the last scan again with the same size setting.
+    func rescan() {
+        guard let size = lastMinimumSize else { return }
+        scan(minimumSize: size)
+    }
+
     func scan(minimumSize: Int64) {
         guard phase != .scanning, phase != .removing else { return }
+        lastMinimumSize = minimumSize
         let cancel = CleanerSupport.ScanCancellation()
         cancellation = cancel
         groups = []

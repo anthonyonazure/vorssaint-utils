@@ -161,6 +161,7 @@ struct LargeFilesView: View {
             Button(allSelected ? l10n.s.uninstallerSelectNone : l10n.s.uninstallerSelectAll) {
                 finder.selectAll(!allSelected)
             }
+            Button(l10n.s.cleanerRescan) { finder.rescan() }
             Button(l10n.s.uninstallerCancel) { finder.reset() }
             Button(l10n.s.largeFilesMoveToTrash) { finder.trashSelected() }
                 .buttonStyle(.borderedProminent)
@@ -183,8 +184,11 @@ struct LargeFilesView: View {
             Text(l10n.s.uninstallerDoneTitle).font(.title3.bold())
             Text(String(format: l10n.s.uninstallerFreedFormat, Self.byteString(freed)))
                 .foregroundStyle(.secondary)
-            Button(l10n.s.uninstallerAnother) { finder.reset() }
-                .buttonStyle(.borderedProminent)
+            HStack {
+                Button(l10n.s.cleanerRescan) { finder.rescan() }
+                Button(l10n.s.uninstallerAnother) { finder.reset() }
+                    .buttonStyle(.borderedProminent)
+            }
         }
         .padding(40)
     }

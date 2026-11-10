@@ -374,6 +374,7 @@ extension Strings {
         startupShared: "Für alle Benutzer freigegeben (nur ansehen)",
         startupNone: "Keine Startobjekte gefunden",
         startupRefresh: "Aktualisieren",
+        cleanerRescan: "Erneut scannen",
         startupLocked: "Teil von macOS oder Vorssaint und kann hier nicht geändert werden",
         startupFailed: "Änderung nicht möglich",
         startupLeftover: "App nicht gefunden, wahrscheinlich ein Überbleibsel",

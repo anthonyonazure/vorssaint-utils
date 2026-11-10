@@ -375,6 +375,7 @@ extension Strings {
         startupShared: "與所有使用者共享（僅供檢視）",
         startupNone: "找不到啟動項目",
         startupRefresh: "重新整理",
+        cleanerRescan: "重新掃描",
         startupLocked: "屬於 macOS 或 Vorssaint，無法在此變更",
         startupFailed: "無法變更",
         startupLeftover: "找不到 App，可能是殘留項目",

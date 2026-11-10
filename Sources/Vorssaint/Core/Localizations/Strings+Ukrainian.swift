@@ -362,6 +362,7 @@ extension Strings {
         startupShared: "Спільні для всіх користувачів (лише перегляд)",
         startupNone: "Елементів автозапуску не знайдено",
         startupRefresh: "Оновити",
+        cleanerRescan: "Сканувати знову",
         startupLocked: "Частина macOS або Vorssaint, тому тут це змінити не можна",
         startupFailed: "Не вдалося змінити",
         startupLeftover: "Програму не знайдено, ймовірно залишок",

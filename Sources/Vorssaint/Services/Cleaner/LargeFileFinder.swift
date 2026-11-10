@@ -49,6 +49,7 @@ final class LargeFileFinder: ObservableObject {
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var items: [Item] = []
     private var cancellation: CleanerSupport.ScanCancellation?
+    private var lastScan: (minimumSize: Int64, olderThanDays: Int)?
 
     private init() {}
 
@@ -79,8 +80,15 @@ final class LargeFileFinder: ObservableObject {
         phase = .idle
     }
 
+    /// Runs the last scan again with the same size and age settings.
+    func rescan() {
+        guard let last = lastScan else { return }
+        scan(minimumSize: last.minimumSize, olderThanDays: last.olderThanDays)
+    }
+
     func scan(minimumSize: Int64, olderThanDays: Int) {
         guard phase != .scanning, phase != .removing else { return }
+        lastScan = (minimumSize, olderThanDays)
         let cancel = CleanerSupport.ScanCancellation()
         cancellation = cancel
         items = []

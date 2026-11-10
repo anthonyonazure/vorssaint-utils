@@ -73,7 +73,7 @@ enum DuplicateFileSupport {
     }
 
     /// Cloud folders, matched by name or by name plus a suffix such as
-    /// "Dropbox (Personal)" or "OneDrive - Company".
+    /// "Dropbox (Personal)", "OneDrive - Company" or "OneDrive-Company".
     private static let syncedFolderRoots = ["Dropbox", "OneDrive", "Google Drive", "Box", "MEGA",
                                             "Creative Cloud Files", "pCloud", "iCloud Drive"]
     private static let vmImageExtensions: Set<String> = ["vdi", "vmdk", "qcow2", "hdd", "vhd", "vhdx"]
@@ -108,7 +108,7 @@ enum DuplicateFileSupport {
         }) {
             risk = .virtualMachine
             tiedTo = machine
-        } else if syncedFolderRoots.contains(where: { top == $0 || top.hasPrefix($0 + " ") }) {
+        } else if syncedFolderRoots.contains(where: { top == $0 || top.hasPrefix($0 + " ") || top.hasPrefix($0 + "-") }) {
             risk = .synced
         } else if vmImageExtensions.contains(url.pathExtension.lowercased()) {
             risk = .virtualMachine

@@ -215,8 +215,9 @@ enum CommandBarTools {
     /// "random", "random 50", "random 10-20", "random 5..9".
     static func parseRange(_ text: String) -> (low: Int, high: Int)? {
         func value(_ piece: Substring) -> Int? {
+            // magnitude, not abs: abs(Int.min) traps.
             guard let number = Int(piece.trimmingCharacters(in: .whitespaces)),
-                  abs(number) <= maxRandomMagnitude else { return nil }
+                  number.magnitude <= UInt(maxRandomMagnitude) else { return nil }
             return number
         }
         if text.isEmpty { return (1, 100) }
@@ -362,9 +363,11 @@ enum CommandBarTools {
         var digits = text.lowercased().filter { $0 != "_" && !$0.isWhitespace }
         guard !digits.isEmpty else { return nil }
         var radix = defaultRadix
+        // One prefix at most: after "0x" the "0b1" of "0x0b1" is digits.
         for (prefix, base) in [("0x", 16), ("0b", 2), ("0o", 8)] where digits.hasPrefix(prefix) {
             digits.removeFirst(2)
             radix = base
+            break
         }
         guard !digits.isEmpty, digits.allSatisfy({ $0.isASCII && $0.isHexDigit }) else { return nil }
         return UInt64(digits, radix: radix)

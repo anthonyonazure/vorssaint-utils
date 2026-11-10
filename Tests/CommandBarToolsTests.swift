@@ -172,6 +172,10 @@ enum CommandBarToolsTests {
         suite.expect(values("dec 0xff").first == "255" && values("hex 0b101").first == "5",
                      "a prefix overrides the keyword")
         suite.expect(values("hex 1_000").first == "4096", "underscores are ignored")
+        suite.expect(values("hex 0x0b1").first == "177", "only one prefix is stripped")
+        suite.expect(CommandBarTools.parseRange("-9223372036854775808 to 5") == nil
+                     && CommandBarTools.parseRange("1 to 9223372036854775807") == nil,
+                     "the extreme integers are refused instead of trapping")
         suite.expect(values("dec 18446744073709551615").first == "18446744073709551615"
                      && values("dec 18446744073709551616").isEmpty,
                      "the largest 64 bit value works and one more is refused")

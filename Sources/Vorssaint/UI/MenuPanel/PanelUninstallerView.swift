@@ -357,8 +357,6 @@ struct PanelUninstallerView: View {
         }
     }
 
-    private var allSelected: Bool { uninstaller.items.allSatisfy(\.include) }
-
     private var removeButtonTitle: String {
         uninstaller.selectedHomebrewPackage == nil ? l10n.s.uninstallerRemove : l10n.s.homebrewUninstall
     }

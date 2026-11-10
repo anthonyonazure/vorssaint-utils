@@ -57,6 +57,8 @@ enum DuplicateFileSupportTests {
                      && DuplicateFileSupport.placement(of: at("Projects/a.pdf"), home: home).risk == nil
                      && DuplicateFileSupport.placement(of: URL(fileURLWithPath: "/Volumes/x/a.pdf"), home: home).tiedTo.isEmpty,
                      "Downloads is temporary, Documents is organised, and outside home is unclassified")
+        suite.expect(DuplicateFileSupport.placement(of: at("OneDrive-Acme/a.pdf"), home: home).risk == .synced,
+                     "a hyphenated cloud folder name is still a cloud folder")
         suite.expect(DuplicateFileSupport.placement(of: at("Dropbox (Personal)/a.pdf"), home: home).risk == .synced
                      && DuplicateFileSupport.placement(of: at("Box Sync/a.pdf"), home: home).risk == .synced
                      && DuplicateFileSupport.placement(of: at("Boxes/a.pdf"), home: home).risk == nil

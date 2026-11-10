@@ -140,16 +140,21 @@ struct DuplicatesView: View {
             Button {
                 NSWorkspace.shared.activateFileViewerSelecting([item.url])
             } label: {
-                Image(systemName: "folder")
+                Label(l10n.s.cleanerRevealInFinder, systemImage: "folder")
             }
-            .buttonStyle(.plain)
+            .controlSize(.small)
             .help(l10n.s.cleanerRevealInFinder)
-            .accessibilityLabel(l10n.s.cleanerRevealInFinder)
         }
         .padding(.vertical, 2)
         .listRowBackground(place.risk == nil ? Color.clear : Color.red.opacity(0.08))
         .help(detailsHelp(item, place: place))
+        .onTapGesture(count: 2) {
+            NSWorkspace.shared.activateFileViewerSelecting([item.url])
+        }
         .contextMenu {
+            Button(l10n.s.cleanerRevealInFinder) {
+                NSWorkspace.shared.activateFileViewerSelecting([item.url])
+            }
             Button(l10n.s.duplicatesKeepThis) { finder.keepOnly(item.id) }
         }
     }

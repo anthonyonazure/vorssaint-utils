@@ -126,17 +126,24 @@ struct LargeFilesView: View {
             Button {
                 NSWorkspace.shared.activateFileViewerSelecting([item.url])
             } label: {
-                Image(systemName: "folder")
+                Label(l10n.s.cleanerRevealInFinder, systemImage: "folder")
             }
-            .buttonStyle(.plain)
+            .controlSize(.small)
             .help(l10n.s.cleanerRevealInFinder)
-            .accessibilityLabel(l10n.s.cleanerRevealInFinder)
             Text(Self.byteString(item.size))
                 .font(.system(size: 11.5)).foregroundStyle(.secondary).monospacedDigit()
         }
         .padding(.vertical, 2)
         .listRowBackground(placementRisk(item) == nil ? Color.clear : Color.red.opacity(0.08))
         .help(detailsHelp(item))
+        .onTapGesture(count: 2) {
+            NSWorkspace.shared.activateFileViewerSelecting([item.url])
+        }
+        .contextMenu {
+            Button(l10n.s.cleanerRevealInFinder) {
+                NSWorkspace.shared.activateFileViewerSelecting([item.url])
+            }
+        }
     }
 
     private var footer: some View {

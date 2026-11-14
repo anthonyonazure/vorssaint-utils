@@ -46,6 +46,30 @@ enum NotchMenuBarSpace {
                                                    menuItems: menuItems, statusItems: statusItems)
     }
 
+    /// Where the frontmost app's last menu ends on this display, or nil when
+    /// it cannot be read. Geometry only, like `measure`; run off-main.
+    static func lastMenuEdge(pid: pid_t, geometry: NotchGeometry, primaryTop: CGFloat) -> CGFloat? {
+        guard AXIsProcessTrusted() else { return nil }
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, 0.15)
+        guard let rawMenu = value(app, kAXMenuBarAttribute),
+              CFGetTypeID(rawMenu) == AXUIElementGetTypeID() else { return nil }
+        let menu = unsafeBitCast(rawMenu, to: AXUIElement.self)
+        guard let rawItems = value(menu, kAXChildrenAttribute),
+              CFGetTypeID(rawItems) == CFArrayGetTypeID(),
+              let items = rawItems as? [AXUIElement], !items.isEmpty, items.count <= 64 else { return nil }
+        let bar = CGRect(x: geometry.screen.minX, y: geometry.screen.maxY - geometry.menuBarHeight,
+                         width: geometry.screen.width, height: geometry.menuBarHeight)
+        let deadline = Date().addingTimeInterval(0.25)
+        var edge: CGFloat?
+        for item in items {
+            guard Date() < deadline, let rect = frame(item, primaryTop: primaryTop) else { return nil }
+            // AX may describe another display's menu bar: only items on this one count.
+            if rect.intersects(bar) { edge = max(edge ?? -.infinity, rect.maxX) }
+        }
+        return edge
+    }
+
     private static func value(_ element: AXUIElement, _ attribute: String) -> CFTypeRef? {
         var result: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute as CFString, &result) == .success else { return nil }

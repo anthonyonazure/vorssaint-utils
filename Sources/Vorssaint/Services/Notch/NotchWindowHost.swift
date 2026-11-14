@@ -90,7 +90,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         canvas.islandMinX = { [weak self] size in self?.islandMinX(size) }
         canvas.stageCentreX = { [weak self] in
             guard let self else { return nil }
-            return self.currentGeometry.screen.midX - self.panel.frame.minX - self.canvas.convert(CGPoint.zero, to: nil).x
+            return self.currentGeometry.anchorX - self.panel.frame.minX - self.canvas.convert(CGPoint.zero, to: nil).x
         }
         canvas.setFloatingGap(geometry.floatingGap)
         canvas.layoutSubtreeIfNeeded()

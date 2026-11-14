@@ -3468,7 +3468,9 @@ final class NotchService: ObservableObject {
         let primaryTop = NSScreen.screens.first?.frame.maxY ?? geometry.screen.maxY
         let window = panel?.windowNumber ?? -1
         menuSpaceQueue.async { [weak self] in
-            let room = NotchMenuBarSpace.measure(pid: pid, geometry: geometry,
+            let afterMenus = geometry.afterMenus
+            let edge = afterMenus ? NotchMenuBarSpace.lastMenuEdge(pid: pid, geometry: geometry, primaryTop: primaryTop) : nil
+            let room = afterMenus ? nil : NotchMenuBarSpace.measure(pid: pid, geometry: geometry,
                                                 primaryTop: primaryTop, ownWindow: window)
             DispatchQueue.main.async {
                 guard let self else { return }
@@ -3479,9 +3481,19 @@ final class NotchService: ObservableObject {
                         ?? (NSApp.isActive ? getpid() : nil)) == pid else {
                     self.readMenuSpace(); return
                 }
-                self.applyMenuSpace(room)
+                if afterMenus { self.applyMenuEdge(edge) } else { self.applyMenuSpace(room) }
             }
         }
+    }
+
+    /// The island follows the end of the frontmost app's menus. Nothing
+    /// measured puts it back over the camera, as before.
+    private func applyMenuEdge(_ edge: CGFloat?) {
+        let wing: CGFloat? = edge == nil ? nil : NotchGeometry.afterMenusWing
+        guard geometry.menuEdge != edge || geometry.compactSideRoom != wing else { return }
+        geometry.menuEdge = edge
+        geometry.compactSideRoom = wing
+        refreshPresentation(animated: false)
     }
 
     private func applyMenuSpace(_ room: CGFloat?) {
@@ -3559,7 +3571,7 @@ final class NotchService: ObservableObject {
         displayID = screen.notchDisplayID
         var next = baseGeometry(for: screen)
         let sameMenuBar = next.hasSameMenuBar(as: geometry)
-        if sameMenuBar { next.compactSideRoom = geometry.compactSideRoom }
+        if sameMenuBar { next.compactSideRoom = geometry.compactSideRoom; next.menuEdge = geometry.menuEdge }
         let access = NotchQuickAccessConfiguration.current()
         next.quickAccessBottomInset = access.hasBottom ? NotchQuickAccessLayout.gutter : 0
         // Read with the floating buttons rather than on every layout pass,
@@ -3615,7 +3627,9 @@ final class NotchService: ObservableObject {
                              capsuleFit: NotchCapsuleFit.current(),
                              hideMenuBarGap: UserDefaults.standard.bool(forKey: DefaultsKey.notchHideMenuBarGap),
                              outline: UserDefaults.standard.bool(forKey: DefaultsKey.notchOutlineEnabled),
-                             barEdge: 1 / max(1, screen.backingScaleFactor))
+                             barEdge: 1 / max(1, screen.backingScaleFactor),
+                             afterMenus: screen.safeAreaInsets.top > 0
+                                && UserDefaults.standard.bool(forKey: DefaultsKey.notchAfterMenus))
     }
 
     private func updateFullscreenVisibility(displayID: CGDirectDisplayID) {

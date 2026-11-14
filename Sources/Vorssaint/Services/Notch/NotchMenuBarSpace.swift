@@ -48,7 +48,8 @@ enum NotchMenuBarSpace {
 
     /// Where the frontmost app's last menu ends on this display, or nil when
     /// it cannot be read. Geometry only, like `measure`; run off-main.
-    static func lastMenuEdge(pid: pid_t, geometry: NotchGeometry, primaryTop: CGFloat) -> CGFloat? {
+    static func lastMenuEdge(pid: pid_t, geometry: NotchGeometry, primaryTop: CGFloat,
+                             screens: [CGRect] = []) -> CGFloat? {
         guard AXIsProcessTrusted() else { return nil }
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.15)
@@ -61,13 +62,19 @@ enum NotchMenuBarSpace {
         let bar = CGRect(x: geometry.screen.minX, y: geometry.screen.maxY - geometry.menuBarHeight,
                          width: geometry.screen.width, height: geometry.menuBarHeight)
         let deadline = Date().addingTimeInterval(0.25)
-        var edge: CGFloat?
+        var rects: [CGRect] = []
         for item in items {
             guard Date() < deadline, let rect = frame(item, primaryTop: primaryTop) else { return nil }
-            // AX may describe another display's menu bar: only items on this one count.
-            if rect.intersects(bar) { edge = max(edge ?? -.infinity, rect.maxX) }
+            rects.append(rect)
         }
-        return edge
+        let here = rects.filter { $0.intersects(bar) }
+        if let edge = here.map(\.maxX).max() { return edge }
+        // AX reports the menus on one display only. Every display's bar starts
+        // its menus the same distance from its left edge, so carry the end of
+        // the last menu over from the display that reported them.
+        guard let last = rects.max(by: { $0.maxX < $1.maxX }),
+              let host = screens.first(where: { $0.contains(CGPoint(x: last.midX, y: last.midY)) }) else { return nil }
+        return geometry.screen.minX + (last.maxX - host.minX)
     }
 
     private static func value(_ element: AXUIElement, _ attribute: String) -> CFTypeRef? {

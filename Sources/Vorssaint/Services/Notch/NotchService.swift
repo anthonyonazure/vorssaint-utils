@@ -3466,10 +3466,12 @@ final class NotchService: ObservableObject {
         let generation = menuSpaceGeneration
         let geometry = geometry
         let primaryTop = NSScreen.screens.first?.frame.maxY ?? geometry.screen.maxY
+        let screenFrames = NSScreen.screens.map(\.frame)
         let window = panel?.windowNumber ?? -1
         menuSpaceQueue.async { [weak self] in
             let afterMenus = geometry.afterMenus
-            let edge = afterMenus ? NotchMenuBarSpace.lastMenuEdge(pid: pid, geometry: geometry, primaryTop: primaryTop) : nil
+            let edge = afterMenus ? NotchMenuBarSpace.lastMenuEdge(pid: pid, geometry: geometry, primaryTop: primaryTop,
+                                                                          screens: screenFrames) : nil
             let room = afterMenus ? nil : NotchMenuBarSpace.measure(pid: pid, geometry: geometry,
                                                 primaryTop: primaryTop, ownWindow: window)
             DispatchQueue.main.async {

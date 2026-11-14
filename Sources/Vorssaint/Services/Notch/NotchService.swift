@@ -280,6 +280,11 @@ final class NotchService: ObservableObject {
     private var appFullscreenTimer: Timer?
     private var appFullscreenDisplays: Set<CGDirectDisplayID> = []
     private var menuSpaceReading = false
+    /// Where the frontmost app's last menu ends, from the left edge of any
+    /// display. Copies of the island on other displays park after it.
+    private var menuEndOffset: CGFloat?
+    private var afterMenusTimer: Timer?
+    private var afterMenusReading = false
     private var menuSpaceGeneration = 0
     private var menuBarMeasurements = NotchMenuBarMeasurements()
     private var screenRefreshWork: DispatchWorkItem?
@@ -3197,7 +3202,12 @@ final class NotchService: ObservableObject {
             var base: NotchGeometry?
             if id != displayID || id == mirrorHeldForArrival, !hidesAtRest, !fullscreenDisplays.contains(id) {
                 var geometry = baseGeometry(for: screen)
-                geometry.compactSideRoom = mirrorSideRoom(on: screen, geometry: geometry)
+                if geometry.afterMenus, let offset = menuEndOffset {
+                    geometry.menuEdge = screen.frame.minX + offset
+                    geometry.compactSideRoom = NotchGeometry.afterMenusWing
+                } else {
+                    geometry.compactSideRoom = mirrorSideRoom(on: screen, geometry: geometry)
+                }
                 // A simulated island needs the menus' room at rest, as the island does.
                 if geometry.isNotched || geometry.compactSideRoom != nil {
                     // Keep the arriving copy only while it may still show.
@@ -3395,14 +3405,56 @@ final class NotchService: ObservableObject {
         NSScreen.screensHaveSeparateSpaces || NSScreen.withMenuBar?.frame == geometry.screen
     }
 
+    /// Keeps the end of the app menus measured while a notched display parks
+    /// its island after them. The copies on other displays never measure.
+    private func syncAfterMenusMonitoring() {
+        let wanted = running && !suspended && UserDefaults.standard.bool(forKey: DefaultsKey.notchAfterMenus)
+            && AXIsProcessTrusted() && NSScreen.screens.contains { $0.safeAreaInsets.top > 0 }
+        guard wanted else {
+            afterMenusTimer?.invalidate()
+            afterMenusTimer = nil
+            if menuEndOffset != nil { menuEndOffset = nil; syncMirrors() }
+            return
+        }
+        guard afterMenusTimer == nil else { return }
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in self?.readAfterMenus() }
+        timer.tolerance = 0.2
+        afterMenusTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+        readAfterMenus()
+    }
+
+    private func readAfterMenus() {
+        guard !afterMenusReading,
+              let pid = NSWorkspace.shared.menuBarOwningApplication?.processIdentifier else { return }
+        afterMenusReading = true
+        let primaryTop = NSScreen.screens.first?.frame.maxY ?? 0
+        let frames = NSScreen.screens.map(\.frame)
+        menuSpaceQueue.async { [weak self] in
+            let offset = NotchMenuBarSpace.lastMenuOffset(pid: pid, primaryTop: primaryTop, screens: frames)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.afterMenusReading = false
+                guard self.afterMenusTimer != nil, self.menuEndOffset != offset else { return }
+                self.menuEndOffset = offset
+                self.syncMirrors()
+                if self.geometry.afterMenus {
+                    self.applyMenuEdge(offset.map { self.geometry.screen.minX + $0 })
+                }
+            }
+        }
+    }
+
     private func syncMenuSpaceMonitoring() {
+        syncAfterMenusMonitoring()
         guard !hiddenInFullscreen else { stopMenuSpaceMonitoring(); return }
         // The explicit cover-menus choice also keeps a simulated island at
         // rest. Otherwise its visibility follows AX menu measurements, which
         // can change just because focus moves to another app or display.
         // A display without a menu bar, beside the main one when displays
         // share Spaces, has no menus to leave room for either.
-        if running, !suspended, NotchSupport.coversMenus() || !displayHasMenuBar {
+        // Parking after the menus needs their measurement, so it never takes the cover-menus shortcut.
+        if running, !suspended, (NotchSupport.coversMenus() && !geometry.afterMenus) || !displayHasMenuBar {
             // Nothing to measure: the island keeps the room an empty bar
             // would leave it, over whatever menus and status items are there.
             stopMenuSpaceMonitoring()

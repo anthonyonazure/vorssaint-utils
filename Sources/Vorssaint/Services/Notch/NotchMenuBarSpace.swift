@@ -77,6 +77,30 @@ enum NotchMenuBarSpace {
         return geometry.screen.minX + (last.maxX - host.minX)
     }
 
+    /// How far the frontmost app's last menu ends from the left edge of the
+    /// display that reports its menus. Every display's bar starts its menus
+    /// at the same distance from its own left edge, so any display can use it.
+    static func lastMenuOffset(pid: pid_t, primaryTop: CGFloat, screens: [CGRect]) -> CGFloat? {
+        guard AXIsProcessTrusted() else { return nil }
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, 0.15)
+        guard let rawMenu = value(app, kAXMenuBarAttribute),
+              CFGetTypeID(rawMenu) == AXUIElementGetTypeID() else { return nil }
+        let menu = unsafeBitCast(rawMenu, to: AXUIElement.self)
+        guard let rawItems = value(menu, kAXChildrenAttribute),
+              CFGetTypeID(rawItems) == CFArrayGetTypeID(),
+              let items = rawItems as? [AXUIElement], !items.isEmpty, items.count <= 64 else { return nil }
+        let deadline = Date().addingTimeInterval(0.25)
+        var rects: [CGRect] = []
+        for item in items {
+            guard Date() < deadline, let rect = frame(item, primaryTop: primaryTop) else { return nil }
+            rects.append(rect)
+        }
+        guard let last = rects.max(by: { $0.maxX < $1.maxX }),
+              let host = screens.first(where: { $0.contains(CGPoint(x: last.midX, y: last.midY)) }) else { return nil }
+        return last.maxX - host.minX
+    }
+
     private static func value(_ element: AXUIElement, _ attribute: String) -> CFTypeRef? {
         var result: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute as CFString, &result) == .success else { return nil }

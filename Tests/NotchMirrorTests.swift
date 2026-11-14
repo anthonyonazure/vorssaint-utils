@@ -78,6 +78,7 @@ enum NotchMirrorContract {
 
     class State {
         var showsOnAllDisplays = true, running = true, suspended = false
+        var menuEndOffset: CGFloat?
         var windowHost: Host? = Host()
         var mirrorHeldForArrival: CGDirectDisplayID?
         var displayID: CGDirectDisplayID? = 1

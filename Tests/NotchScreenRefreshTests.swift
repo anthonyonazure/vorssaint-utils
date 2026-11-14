@@ -127,6 +127,8 @@ enum NotchScreenRefreshContract {
     }
     class State {
         var hiddenInFullscreen = false
+        /// Parking after the app menus is measured by its own timer; not under test here.
+        func syncAfterMenusMonitoring() {}
         func fullscreenEnvironmentDidChange() {}
         var running = true
         var suspended = false

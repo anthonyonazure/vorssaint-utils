@@ -285,6 +285,7 @@ final class NotchService: ObservableObject {
     private var menuEndOffset: CGFloat?
     private var afterMenusTimer: Timer?
     private var afterMenusReading = false
+    private var afterMenusAskedForAccess = false
     private var menuSpaceGeneration = 0
     private var menuBarMeasurements = NotchMenuBarMeasurements()
     private var screenRefreshWork: DispatchWorkItem?
@@ -3408,8 +3409,16 @@ final class NotchService: ObservableObject {
     /// Keeps the end of the app menus measured while a notched display parks
     /// its island after them. The copies on other displays never measure.
     private func syncAfterMenusMonitoring() {
-        let wanted = running && !suspended && UserDefaults.standard.bool(forKey: DefaultsKey.notchAfterMenus)
-            && AXIsProcessTrusted() && NSScreen.screens.contains { $0.safeAreaInsets.top > 0 }
+        let wantsAfterMenus = running && !suspended && UserDefaults.standard.bool(forKey: DefaultsKey.notchAfterMenus)
+            && NSScreen.screens.contains { $0.safeAreaInsets.top > 0 }
+        // Measuring the menus needs Accessibility. Ask for it the first time the
+        // placement is wanted, so the app shows up in the Accessibility list
+        // instead of the island silently sitting where it started.
+        if wantsAfterMenus, !AXIsProcessTrusted(), !afterMenusAskedForAccess {
+            afterMenusAskedForAccess = true
+            DispatchQueue.main.async { Permissions.shared.requestAccessibility() }
+        }
+        let wanted = wantsAfterMenus && AXIsProcessTrusted()
         guard wanted else {
             afterMenusTimer?.invalidate()
             afterMenusTimer = nil

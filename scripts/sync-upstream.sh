@@ -273,7 +273,7 @@ fi
 # ---------------------------------------------------------------- tests
 say "running the full test suite"
 if ! (cd "$WT" && ./build.sh --test > "$CACHE_DIR/test-output.log" 2>&1); then
-    failed="$(grep -E 'FAILED|✗|error:' "$CACHE_DIR/test-output.log" | head -40)"
+    failed="$(grep -E 'FAILED|✗|error:|^  - ' "$CACHE_DIR/test-output.log" | head -40)"
     cp "$CACHE_DIR/test-output.log" "$LOG_DIR/sync-$STAMP-tests.log"
     report 5 "Stopped: tests failed after merging $TARGET" "Nothing installed was changed and \`$BRANCH\` did not move.
 

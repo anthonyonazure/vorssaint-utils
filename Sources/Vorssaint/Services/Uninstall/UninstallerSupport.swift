@@ -903,7 +903,7 @@ enum UninstallerSupport {
     private static func isOwnBundleID(_ id: String) -> Bool {
         let lowered = id.lowercased()
         return lowered == "com.vorssaint" || lowered.hasPrefix("com.vorssaint.")
-            || lowered.hasPrefix("vorss.")
+            || lowered.hasPrefix("vorss.") || ForkIdentity.isOwnBundleID(lowered)
     }
 
     private static func stripKnownSuffix(_ rawName: String) -> String {

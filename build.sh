@@ -29,12 +29,14 @@ trap 'exit 1' INT TERM HUP
 # Flags: --dev builds the local-only "Vorssaint (Developer)" variant (its own
 # bundle id, so it coexists with the official app); --install puts it in /Applications.
 DEV=0
+MAK=0
 INSTALL=0
 TEST=0
 TEST_ARGS=()
 for arg in "$@"; do
     case "$arg" in
         --dev)     DEV=1 ;;
+        --mak)     MAK=1 ;;
         --install) INSTALL=1 ;;
         --test)    TEST=1 ;;
         --test-suite=*) TEST=1; TEST_ARGS+=("--suite=${arg#*=}") ;;
@@ -42,7 +44,16 @@ for arg in "$@"; do
     esac
 done
 
-if (( DEV )); then
+if (( MAK )); then
+    # macArmyKnife: a renamed personal build with its own name, icon, bundle
+    # id, signing identity and no self-update (see MACARMYKNIFE.md).
+    APP_NAME="macArmyKnife"
+    EXECUTABLE="macArmyKnife"
+    APP_BUNDLE_ID="io.github.anthonyonazure.macarmyknife"
+    BUILD_VARIANT_FLAGS=(-D MACARMYKNIFE)
+    APP_OPTIMIZATION_FLAGS=(-O)
+    BUILD_CONFIGURATION="release"
+elif (( DEV )); then
     APP_NAME="Vorssaint (Developer)"
     EXECUTABLE="VorssaintDeveloper"
     APP_BUNDLE_ID="com.vorssaint.utils.dev"
@@ -65,8 +76,15 @@ NOW_PLAYING_ADAPTER="libVorssaintNowPlaying.dylib"
 TARGET="arm64-apple-macosx14.0"
 ENTITLEMENTS="Resources/Vorssaint.entitlements"
 LEGACY_IDENTITY="Vorssaint Utils Signing"
+if (( MAK )); then
+    # Always the same self-signed certificate, never a Developer ID that may
+    # appear later: macOS ties permission grants to the signing identity.
+    LEGACY_IDENTITY="macArmyKnife Signing"
+    ./scripts/mak/setup-signing.sh >/dev/null || { echo "✗ macArmyKnife signing identity unavailable" >&2; exit 1; }
+fi
 
 developer_id_identity() {
+    (( ${MAK:-0} )) && return 0
     security find-identity -v -p codesigning 2>/dev/null \
         | grep 'Developer ID Application' \
         | head -1 \
@@ -417,6 +435,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Recorder/RecorderBlurRegion.swift
         Sources/Vorssaint/Services/Recorder/RecorderEditDocument.swift
         Sources/Vorssaint/Core/AppInfo.swift
+        Sources/Vorssaint/Core/ForkIdentity.swift
         Sources/Vorssaint/Core/GlobalShortcut.swift
         Sources/Vorssaint/Core/SymbolicHotKeys.swift
         Sources/Vorssaint/Services/SystemShortcutTakeoverSupport.swift
@@ -631,6 +650,7 @@ fi
 
 echo "▸ Compiling ($BUILD_CONFIGURATION) against $(basename "$SDK")…"
 APP_SOURCES=(Sources/Vorssaint/**/*.swift)
+(( MAK )) && APP_SOURCES=("${(@f)$(./scripts/mak/stage-sources.sh)}")
 if (( ! DEV )); then
     # A release starts from an empty build directory, so nothing an earlier
     # build left behind (an old icon catalog, a staged bundle) can reach it.
@@ -725,7 +745,7 @@ cp CHANGELOG.md "$STAGE/Contents/Resources/CHANGELOG.md"
 for lproj in Resources/*.lproj(N); do
     cp -R "$lproj" "$STAGE/Contents/Resources/"
 done
-if (( DEV )); then
+if (( DEV || MAK )); then
     # A distinct identity so the Developer build installs and runs next to the
     # official app, with its own permissions, preferences and login item.
     /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $APP_BUNDLE_ID" "$STAGE/Contents/Info.plist"
@@ -774,6 +794,7 @@ if [[ -d Resources/Images ]]; then
     mkdir -p "$STAGE/Contents/Resources/Images"
     cp Resources/Images/* "$STAGE/Contents/Resources/Images/"
 fi
+(( MAK )) && ./scripts/mak/rebrand-bundle.sh "$STAGE"
 xattr -c -r "$STAGE" 2>/dev/null || true
 
 # Signing, in order of preference:
@@ -921,9 +942,9 @@ if (( DEV )); then
     done
 fi
 
-if (( !DEV || !INSTALL )); then
+if (( !(DEV || MAK) || !INSTALL )); then
     STAGE_DIRECTORY="build/stage"
-    (( DEV )) && STAGE_DIRECTORY="build/stage.noindex"
+    (( DEV || MAK )) && STAGE_DIRECTORY="build/stage.noindex"
     mkdir -p "$STAGE_DIRECTORY"
     BUILD_STAGE="$STAGE_DIRECTORY/$APP_NAME.app"
     rm -rf "$BUILD_STAGE"
@@ -944,7 +965,7 @@ if (( INSTALL )); then
     stop_process "$EXECUTABLE"
     # Only an official install replaces the pre-rename official apps. The
     # Developer variant must coexist with them just as it does with Vorssaint.
-    if (( ! DEV )); then
+    if (( ! DEV && ! ${MAK:-0} )); then
         for legacy in "Vorss:Vorss" "Vorssaint Utils:VorssaintUtils"; do
             name="${legacy%%:*}"; proc="${legacy##*:}"
             if [[ -d "/Applications/$name.app" ]]; then

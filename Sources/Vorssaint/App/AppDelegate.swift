@@ -1923,6 +1923,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 
     func openFeedbackWindow(kind: FeedbackKind = .bug) {
         closePopover()
+        guard ForkIdentity.allowsFeedback else {
+            // macArmyKnife: feedback would reach the Vorssaint maintainers; open the fork instead.
+            NSWorkspace.shared.open(ForkIdentity.sourceURL)
+            return
+        }
         let host = NSHostingController(rootView: FeedbackView(initialKind: kind) { [weak self] in
             self?.feedbackWindow?.close()
         })

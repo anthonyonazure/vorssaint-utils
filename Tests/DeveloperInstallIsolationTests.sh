@@ -50,4 +50,24 @@ for DEV in 1 0; do
         [[ "$(cat "$install_test_dir/Applications/Vorssaint (Developer).app/content")" == original ]]
     fi
 done
+# macArmyKnife installs beside every Vorssaint app and never removes one.
+for name in Vorss 'Vorssaint Utils' Vorssaint 'Vorssaint (Developer)'; do
+    mkdir -p "$install_test_dir/Applications/$name.app"
+    print original > "$install_test_dir/Applications/$name.app/content"
+done
+stopped=()
+signed=()
+DEV=0
+MAK=1
+APP_NAME=macArmyKnife
+EXECUTABLE=macArmyKnife
+source "$install_test_dir/install.zsh"
+[[ "$(cat "$install_test_dir/Applications/macArmyKnife.app/content")" == new ]]
+[[ "${signed[*]}" == "$install_test_dir/Applications/macArmyKnife.app" ]]
+[[ "${stopped[*]}" == macArmyKnife ]]
+for name in Vorss 'Vorssaint Utils' Vorssaint 'Vorssaint (Developer)'; do
+    [[ "$(cat "$install_test_dir/Applications/$name.app/content")" == original ]]
+done
+MAK=0
+
 print 'DEVELOPER INSTALL ISOLATION TESTS OK'

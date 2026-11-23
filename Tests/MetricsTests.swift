@@ -13,6 +13,7 @@ struct MetricsTests {
             ("harness", {
                 TestHarnessTests.run(suite)
                 PreferenceNamespaceTests.run(suite)
+                ForkIdentityContractTests.run(suite)
             }),
             ("metrics", {
                 MetricsFeatureTests.run(suite)

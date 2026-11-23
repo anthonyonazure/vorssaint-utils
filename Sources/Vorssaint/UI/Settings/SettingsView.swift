@@ -741,7 +741,9 @@ struct AboutSettings: View {
                 aboutContent
             }
 
-            UpdatesView()
+            if ForkIdentity.allowsSelfUpdate {
+                UpdatesView()
+            }
         }
         .formStyle(.grouped)
     }

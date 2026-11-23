@@ -27,6 +27,7 @@ enum StartupItemSupport {
     static func isLocked(_ label: String) -> Bool {
         let lowered = label.lowercased()
         return lowered.hasPrefix("com.apple.") || lowered.hasPrefix("com.vorssaint")
+            || ForkIdentity.isOwnBundleID(lowered)
     }
 
     /// The app bundle a program sits inside, if any: the first path part that

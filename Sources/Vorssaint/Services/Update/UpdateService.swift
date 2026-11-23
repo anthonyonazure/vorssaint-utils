@@ -61,6 +61,7 @@ final class UpdateService: ObservableObject {
 
     /// Called at launch: checks shortly after start and then daily, if enabled.
     func startAutomaticChecks() {
+        guard ForkIdentity.allowsSelfUpdate else { return }  // macArmyKnife: never self-update
         consumeInstallResult()
         if AppInfo.isBeta && UserDefaults.standard.object(forKey: DefaultsKey.includeBetaUpdates) == nil {
             UserDefaults.standard.set(true, forKey: DefaultsKey.includeBetaUpdates)
@@ -100,6 +101,7 @@ final class UpdateService: ObservableObject {
     // MARK: - Check
 
     func check(manual: Bool) {
+        guard ForkIdentity.allowsSelfUpdate else { return }  // macArmyKnife: never self-update
         if AppInfo.isDeveloperBuild {
             // No real update target; reflect the simulation default so the
             // notification UI can be exercised locally.
@@ -193,6 +195,7 @@ final class UpdateService: ObservableObject {
     /// or the panel opens, so a new release surfaces promptly without hammering the
     /// API. The hourly timer is the floor; this makes it feel immediate.
     func checkIfStale(maxAge: TimeInterval = 15 * 60) {
+        guard ForkIdentity.allowsSelfUpdate else { return }  // macArmyKnife: never self-update
         if AppInfo.isDeveloperBuild { return }
         guard autoCheckEnabled else { return }
         switch state {
@@ -206,6 +209,7 @@ final class UpdateService: ObservableObject {
     // MARK: - Download & install
 
     func downloadAndInstall() {
+        guard ForkIdentity.allowsSelfUpdate else { return }  // macArmyKnife: never self-update
         if AppInfo.isDeveloperBuild { return }  // never replace the local dev build over itself
         guard let downloadURL else { return }
         // Pre-flight BEFORE spending the download: a translocated app or one
@@ -313,6 +317,7 @@ final class UpdateService: ObservableObject {
     /// writable by this user (standard account with the app in /Applications),
     /// the script runs through an admin prompt instead of failing silently.
     private func launchInstaller(dmgPath: String, offered: String?) {
+        guard ForkIdentity.allowsSelfUpdate else { return }  // macArmyKnife: never self-update
         let appPath = Bundle.main.bundlePath
         let pid = ProcessInfo.processInfo.processIdentifier
         let fm = FileManager.default

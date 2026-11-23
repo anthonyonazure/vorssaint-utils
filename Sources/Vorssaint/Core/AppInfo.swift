@@ -5,10 +5,11 @@ import Foundation
 
 /// Static identity of the app, shared by UI, notifications and tooling.
 enum AppInfo {
-    static let name = "Vorssaint"
-    static let copyright = "© 2026 Vorssaint"
+    static let name = ForkIdentity.isActive ? ForkIdentity.name : "Vorssaint"
+    static let copyright = ForkIdentity.isActive ? ForkIdentity.notice : "© 2026 Vorssaint"
     static let websiteURL = URL(string: "https://vorssaint.com")!
-    static let repositoryURL = URL(string: "https://github.com/vorssaint/vorssaint-utils")!
+    static let repositoryURL = ForkIdentity.isActive
+        ? ForkIdentity.sourceURL : URL(string: "https://github.com/vorssaint/vorssaint-utils")!
     static let coffeeURL = URL(string: "https://buymeacoffee.com/vorssaint")!
     static let discordURL = URL(string: "https://discord.gg/M6BwWH4BJp")!
     static let socialURL = URL(string: "https://x.com/vorssaint")!

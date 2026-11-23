@@ -419,8 +419,10 @@ push_branch || push_note="Pushing \`$BRANCH\` to the fork failed; the next run w
 
 outcome="Updated to $TARGET"
 (( NEED_MERGE )) || outcome="Reinstalled $BRANCH (already included $TARGET)"
+backup_note="No previous copy (first install)."
+[[ -d "$BACKUP_APP" ]] && backup_note="Previous app kept at: $BACKUP_APP"
 report 0 "$outcome" "- Tests: ${checks:-passed}
-- Previous app kept at: $BACKUP_APP
+- $backup_note
 - $push_note
 
 $identity_notes"

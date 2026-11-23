@@ -313,7 +313,10 @@ pb() { /usr/libexec/PlistBuddy -c "Print :$1" "$plist" 2>/dev/null; }
 [[ "$(pb CFBundleName)" == "$APP_NAME" ]] || problems+=("name is '$(pb CFBundleName)'")
 pb CFBundleIconName >/dev/null && problems+=("still points at the Vorssaint adaptive icon")
 codesign --verify --deep --strict "$BUILT" 2>/dev/null || problems+=("signature does not verify")
-codesign -dvv "$BUILT" 2>&1 | grep -q "^Authority=$SIGNING_IDENTITY\$" || problems+=("not signed by $SIGNING_IDENTITY")
+# Read the whole output first: with pipefail, grep -q closing the pipe early
+# would make codesign's SIGPIPE look like a failed check.
+signing_info="$(codesign -dvv "$BUILT" 2>&1)"
+[[ "$signing_info" == *$'\n'"Authority=$SIGNING_IDENTITY"$'\n'* ]] || problems+=("not signed by $SIGNING_IDENTITY")
 binary="$BUILT/Contents/MacOS/$APP_NAME"
 for marker in "${FEATURE_MARKERS[@]}"; do
     grep -q -a -- "${marker%%:*}" "$binary" 2>/dev/null || problems+=("missing feature: ${marker#*:}")

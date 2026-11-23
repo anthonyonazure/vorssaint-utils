@@ -15,6 +15,7 @@ enum NotchCapsuleTests {
     static func run(_ suite: TestSuite) {
         preferenceContracts(suite)
         placementContracts(suite)
+        afterMenusContracts(suite)
         outlineContracts(suite)
         stripContracts(suite)
         calendarLeadContracts(suite)
@@ -112,6 +113,32 @@ enum NotchCapsuleTests {
 
     /// The capsule is centred in the bar with the same margin above and
     /// below, and the same capsule shows whether or not the bar is visible.
+    /// A notched display can park the island after the app menus: a capsule
+    /// that clears the menus and stays on screen, and the camera again when
+    /// nothing is measured or the setting is off.
+    private static func afterMenusContracts(_ suite: TestSuite) {
+        let display = CGRect(x: 2560, y: -178, width: 2056, height: 1329)
+        func notched(after: Bool, edge: CGFloat?) -> NotchGeometry {
+            var geometry = NotchGeometry(screen: display, safeAreaTop: 38, cameraWidth: 200, menuBarHeight: 38,
+                                         silhouette: .capsule, afterMenus: after)
+            geometry.menuEdge = edge
+            return geometry
+        }
+        let off = notched(after: false, edge: 3200)
+        let unmeasured = notched(after: true, edge: nil)
+        suite.expect(off.isNotched && off.anchorX == display.midX && off.frame(for: CGSize(width: 300, height: 38)).midX == display.midX,
+                     "with the setting off a camera keeps the island centred over it")
+        suite.expect(unmeasured.anchorX == display.midX && !unmeasured.isNotched && unmeasured.floats,
+                     "before the menus are measured the capsule waits at the camera instead of jumping")
+        let after = notched(after: true, edge: 3200)
+        let frame = after.frame(for: CGSize(width: after.cameraWidth, height: 38))
+        suite.expect(after.floats && frame.minX >= 3200 + 12 + NotchGeometry.afterMenusWing - 1,
+                     "measured, the capsule starts after the last menu with room for its strips")
+        let farRight = notched(after: true, edge: display.maxX + 500)
+        suite.expect(farRight.frame(for: CGSize(width: 300, height: 38)).maxX <= display.maxX,
+                     "a measurement past the display never pushes the island off screen")
+    }
+
     private static func placementContracts(_ suite: TestSuite) {
         let standard = capsule(bar: 24)
         let hiddenBar = capsule(bar: 22)

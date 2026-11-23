@@ -2249,6 +2249,11 @@ struct NotchGeometry: Equatable {
     /// manual fit and outline clearance, rather than just the hardware inset.
     let cameraHeight: CGFloat
     let isNotched: Bool
+    /// The island sits just after the frontmost app's last menu instead of
+    /// over the camera, drawn as a floating capsule so it covers no icons.
+    let afterMenus: Bool
+    /// Where that last menu ends, in screen coordinates; nil until measured.
+    var menuEdge: CGFloat?
     let layout: NotchSize
     let customWidth: CGFloat
     let customHeight: CGFloat
@@ -2287,13 +2292,15 @@ struct NotchGeometry: Equatable {
          menuBarHeight: CGFloat = 24, compactSideRoom: CGFloat? = nil,
          customWidth: Double = NotchSize.defaultWidth, customHeight: Double = NotchSize.defaultHeight,
          cameraFit: NotchCameraFit = .zero, silhouette: NotchSilhouette = .notch, capsuleFit: NotchCapsuleFit = .zero,
-         hideMenuBarGap: Bool = false, outline: Bool = false, barEdge: CGFloat = 0) {
+         hideMenuBarGap: Bool = false, outline: Bool = false, barEdge: CGFloat = 0,
+         afterMenus: Bool = false) {
         self.screen = screen
+        self.afterMenus = afterMenus
         self.layout = layout
         self.customWidth = NotchSize.clamped(customWidth, to: NotchSize.widthRange, fallback: NotchSize.defaultWidth)
         self.customHeight = NotchSize.clamped(customHeight, to: NotchSize.heightRange, fallback: NotchSize.defaultHeight)
         let barHeight = menuBarHeight.isFinite ? min(64, max(16, menuBarHeight)) : 24
-        isNotched = safeAreaTop.isFinite && safeAreaTop > 0 && cameraWidth.isFinite && cameraWidth > 0
+        isNotched = !afterMenus && safeAreaTop.isFinite && safeAreaTop > 0 && cameraWidth.isFinite && cameraWidth > 0
         // Only a physical camera has an outline to match; a simulated one follows the bar.
         let fit = isNotched ? cameraFit : .zero
         // A capsule replaces only a simulated cutout. It is as wide as the
@@ -2828,8 +2835,18 @@ struct NotchGeometry: Equatable {
                height: max(0, size.height - headerTopInset - headerChromeHeight))
     }
     var appPanelSize: CGSize { contentSize(for: expandedSize(module: .tools, panel: true)) }
+    /// Room each side of the capsule keeps for the strips it grows by.
+    static let afterMenusWing: CGFloat = 56
+    /// The centre the island is drawn around: the camera's, or in the gap
+    /// after the app menus once they are measured.
+    var anchorX: CGFloat {
+        guard afterMenus, let menuEdge, menuEdge.isFinite else { return screen.midX }
+        let half = cameraWidth / 2 + Self.afterMenusWing
+        return min(menuEdge + 12 + half, screen.maxX - half - 8)
+    }
+
     func frame(for size: CGSize) -> CGRect {
-        CGRect(x: screen.midX + surfaceShift - size.width / 2,
+        CGRect(x: anchorX + surfaceShift - size.width / 2,
                y: screen.maxY - floatingDrop - size.height,
                width: size.width, height: size.height)
     }

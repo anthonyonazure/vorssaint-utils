@@ -3647,6 +3647,10 @@ final class NotchService: ObservableObject {
     }
 
     private func applyMenuSpace(_ room: CGFloat?) {
+        // Parked after the menus, the island's room follows the menu edge
+        // (`applyMenuEdge`). A missing, slow or invalidated camera-side read
+        // has nothing to withdraw there, and withdrawing would hide it.
+        if room == nil, geometry.afterMenus { return }
         guard geometry.compactSideRoom != room else { return }
         let previousSize = surfaceSize
         let grows = (room ?? 0) > (geometry.compactSideRoom ?? 0)

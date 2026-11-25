@@ -59,6 +59,13 @@ enum CommandBarToolsTests {
         suite.expect(values(String(repeating: "a", count: 4_001)).isEmpty
                      && values("sha256 " + String(repeating: "a", count: 4_001)).isEmpty,
                      "text over the length limit is never treated as tool input")
+        // The calculator answers sums, units and rates on its own row; a quick
+        // tool answering the same text would show the result twice.
+        for query in ["5 in to cm", "50 cm + 50 cm to m", "145 mins to timespan", "#fff to rgb",
+                      "2 h to min", "32 f to c", "60 mph to km/h", "5ft 11 in cm", "10 percent of 50",
+                      "2 to the power of 10", "4 squared", "10 mod 3", "2^56", "10:30=", "1e5"] {
+            suite.expect(values(query).isEmpty, "the calculator's \"\(query)\" is left to the calculator")
+        }
     }
 
     // MARK: - Dice
